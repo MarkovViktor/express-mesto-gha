@@ -1,47 +1,45 @@
 const User = require('../models/user');
+const NotFoundError = require('../components/NotFoundError');
+const BadRequestError = require('../components/BadRequestError');
 
-module.exports.getUsers = (req, res) => {
+module.exports.getUsers = (req, res, next) => {
   User.find({})
     .then((users) => res.send({ users }))
-    .catch(() => res.status(500).send({ message: 'Ошибка на сервере' }));
+    .catch(next);
 };
 
-module.exports.getUser = (req, res) => {
+module.exports.getUser = (req, res, next) => {
   User.findById(req.params.userId)
     .then((user) => {
       if (!user) {
-        res.status(404).send({ message: 'Запрашиваемый пользователь не найден' });
+        next(new NotFoundError('Запрашиваемый пользователь не найден'));
       } else {
         res.send({ data: user });
       }
     })
     .catch((err) => {
       if (err.name === 'CastError') {
-        res.status(400).send({
-          message: 'Переданы некорректные данные для поиска',
-        });
+        next(new BadRequestError('Переданы некорректные данные для поиска'));
       } else {
-        res.status(500).send({ message: 'Ошибка на сервере' });
+        next(err);
       }
     });
 };
 
-module.exports.createUser = (req, res) => {
+module.exports.createUser = (req, res, next) => {
   const { name, about, avatar } = req.body;
   User.create({ name, about, avatar })
     .then((user) => res.send({ data: user }))
     .catch((err) => {
       if (err.name === 'ValidationError') {
-        res.status(400).send({
-          message: 'Переданы некорректные данные для создания пользователя',
-        });
+        next(new BadRequestError('Переданы некорректные данные для создания пользователя'));
       } else {
-        res.status(500).send({ message: 'Ошибка на сервере' });
+        next(err);
       }
     });
 };
 
-module.exports.updateProfile = (req, res) => {
+module.exports.updateProfile = (req, res, next) => {
   const { name, about } = req.body;
   User.findByIdAndUpdate(
     req.user._id,
@@ -50,23 +48,21 @@ module.exports.updateProfile = (req, res) => {
   )
     .then((user) => {
       if (!user) {
-        res.status(404).send({ message: 'Запрашиваемый пользователь не найден' });
+        next(new BadRequestError('Запрашиваемый пользователь не найден'));
       } else {
         res.send({ data: user });
       }
     })
     .catch((err) => {
       if (err.name === 'ValidationError') {
-        res.status(400).send({
-          message: 'Переданы некорректные данные для обновления информации о пользователе',
-        });
+        next(new BadRequestError('Переданы некорректные данные для обновления информации о пользователе'));
       } else {
-        res.status(500).send({ message: 'Ошибка на сервере' });
+        next(err);
       }
     });
 };
 
-module.exports.updateAvatar = (req, res) => {
+module.exports.updateAvatar = (req, res, next) => {
   const { avatar } = req.body;
   User.findByIdAndUpdate(
     req.user._id,
@@ -75,18 +71,16 @@ module.exports.updateAvatar = (req, res) => {
   )
     .then((user) => {
       if (!user) {
-        res.status(404).send({ message: 'Запрашиваемый пользователь не найден' });
+        next(new BadRequestError('Запрашиваемый пользователь не найден'));
       } else {
         res.send({ data: user });
       }
     })
     .catch((err) => {
       if (err.name === 'ValidationError') {
-        res.status(400).send({
-          message: 'Переданны некорректные данные для обновления аватарки пользователя',
-        });
+        next(new BadRequestError('Переданны некорректные данные для обновления аватарки пользователя'));
       } else {
-        res.status(500).send({ message: 'Ошибка на сервере' });
+        next(err);
       }
     });
 };

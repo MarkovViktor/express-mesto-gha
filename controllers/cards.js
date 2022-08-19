@@ -13,10 +13,7 @@ module.exports.getCards = (req, res, next) => {
 
 module.exports.createCard = (req, res, next) => {
   const { name, link } = req.body;
-  const owner = req.user._id;
-  Card.create({
-    name, link, owner: req.user._id
-  })
+  Card.create({ name, link, owner: req.user._id })
     .then((card) => card.populate('owner'))
     .then((card) => res.send(card))
     .catch((err) => {
@@ -98,7 +95,7 @@ module.exports.dislikeCard = (req, res, next) => {
         next(new BadRequestError('Запрашиваемая карточка не найдена'));
       } else if (err.name === 'ValidationError') {
         next(
-          new BadRequestError('Переданы некорректные данные для постановки дизлайка карточки',),
+          new BadRequestError('Переданы некорректные данные для постановки дизлайка карточки'),
         );
       } else {
         next(err);

@@ -61,21 +61,26 @@ module.exports.getUser = (req, res, next) => {
 
 module.exports.createUser = (req, res, next) => {
   const { name, about, avatar, email, password, } = req.body;
-    bcrypt
-      .hash(password, 10)
-      .then((hash) => User.create({
-        name, about, avatar, email, password: hash,
-      }))
-      .then((user) => res.status(201).send({name: user.name, about: user.about, avatar: user.avatar, email: user.email,}))
-      .catch((err) => {
-        if (err.name === 'ValidationError') {
-          next(new BadRequestError('Переданы некорректные данные для создания пользователя'));
-        } else if (err.code === 11000) {
-          next(new ConflictError('Этот e-mail занят'));
-        } else {
-          next(err);
-        }
-  });
+  bcrypt
+    .hash(password, 10)
+    .then((hash) => User.create({
+      name, about, avatar, email, password: hash,
+    }))
+    .then((user) => res.status(201).send({
+      name: user.name,
+      about: user.about,
+      avatar: user.avatar,
+      email: user.email,
+    }))
+    .catch((err) => {
+      if (err.name === 'ValidationError') {
+        next(new BadRequestError('Переданы некорректные данные для создания пользователя'));
+      } else if (err.code === 11000) {
+        next(new ConflictError('Этот e-mail занят'));
+      } else {
+        next(err);
+      }
+    });
 };
 
 module.exports.updateProfile = (req, res, next) => {

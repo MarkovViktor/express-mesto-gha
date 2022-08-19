@@ -1,6 +1,7 @@
 const Card = require('../models/card');
 const NotFoundError = require('../components/NotFoundError');
 const BadRequestError = require('../components/BadRequestError');
+const ForbiddenError = require('../components/ForbiddenError');
 
 module.exports.getCards = (req, res, next) => {
   Card.find({})
@@ -14,8 +15,9 @@ module.exports.createCard = (req, res, next) => {
   const { name, link } = req.body;
   const owner = req.user._id;
   Card.create({
-    name, link, owner,
+    name, link, owner: req.user._id
   })
+    .then((card) => card.populate('owner'))
     .then((card) => res.send(card))
     .catch((err) => {
       if (err.name === 'ValidationError') {
@@ -41,6 +43,8 @@ module.exports.likeCard = (req, res, next) => {
     })
     .catch((err) => {
       if (err.name === 'CastError') {
+        next(new BadRequestError('Запрашиваемая карточка не найдена'));
+      } else if (err.name === 'ValidationError') {
         next(new BadRequestError('Переданы некорректные данные для постановки лайка карточки'));
       } else {
         next(err);
@@ -49,17 +53,27 @@ module.exports.likeCard = (req, res, next) => {
 };
 
 module.exports.deleteCard = (req, res, next) => {
-  Card.findByIdAndRemove(req.params.cardId)
+  Card.findById(req.params.cardId)
+    .then((card) => {
+      if (!card) {
+        next(new NotFoundError('Запрашиваемая карточка не найдена'));
+      } else if (card.owner.toString() === req.user._id) {
+        return Card.findByIdAndRemove(card._id);
+      } else {
+        next(new ForbiddenError('Невозможно удалить чужую карточку'));
+      }
+      return false;
+    })
     .then((card) => {
       if (!card) {
         next(new NotFoundError('Запрашиваемая карточка не найдена'));
       } else {
-        res.send({ data: card });
+        res.send(card);
       }
     })
     .catch((err) => {
       if (err.name === 'CastError') {
-        next(new BadRequestError('Переданы некорректные данные для удаления карточки'));
+        next(new BadRequestError('Запрашиваемая карточка не найдена'));
       } else {
         next(err);
       }
@@ -81,7 +95,11 @@ module.exports.dislikeCard = (req, res, next) => {
     })
     .catch((err) => {
       if (err.name === 'CastError') {
-        next(new BadRequestError('Переданы некорректные данные для постановки дизлайка карточки'));
+        next(new BadRequestError('Запрашиваемая карточка не найдена'));
+      } else if (err.name === 'ValidationError') {
+        next(
+          new BadRequestError('Переданы некорректные данные для постановки дизлайка карточки',),
+        );
       } else {
         next(err);
       }

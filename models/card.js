@@ -11,7 +11,7 @@ const cardSchema = new mongoose.Schema({
   link: {
     type: String,
     required: true,
-    validate: { validator: (v) => isURL(v), message: 'Некорректный url', },
+    validate: { validator: (v) => isURL(v), message: 'Некорректный url' },
   },
   owner: {
     type: mongoose.Schema.Types.ObjectId,

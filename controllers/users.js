@@ -41,21 +41,34 @@ module.exports.getUsers = (req, res, next) => {
     .catch(next);
 };
 
-module.exports.getUser = (req, res, next) => {
-  User.findById(req.user || req.params.userId)
+module.exports.getUserInfo = (req, res, next) => {
+  User.findById(req.user._id)
     .then((user) => {
-      if (!user || (req.params.userId && (user._id.toString() !== req.params.userId))) {
-        next(new NotFoundError('Запрашиваемый пользователь не найден'));
-      } else {
-        res.send({ data: user });
+      if (!user) {
+        throw new NotFoundError('Запрашиваемый пользователь не найден');
       }
+      return res.send({ data: user });
     })
     .catch((err) => {
       if (err.name === 'CastError') {
-        next(new BadRequestError('Переданы некорректные данные для поиска'));
-      } else {
-        next(err);
+        return next(new BadRequestError('Запрашиваемый пользователь не найден'));
       }
+      return next(err);
+    });
+};
+
+module.exports.getUserId = (req, res, next) => {
+  User.findById(req.params.userId)
+    .then((user) => {
+      if (!user) {
+        throw new NotFoundError('Запрашиваемый пользователь не найден');
+      } res.status(200).send(user);
+    })
+    .catch((err) => {
+      if (err.name === 'CastError') {
+        next(new NotFoundError('Запрашиваемый пользователь не найден'));
+      }
+      return next(err);
     });
 };
 
